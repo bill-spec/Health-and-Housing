@@ -1,0 +1,180 @@
+---
+title: "Data Wrangling"
+author: "Bill Lang"
+date: "3/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+
+```{r}
+houseOwnership <- read.csv("C:/Users/Billy/Desktop/1223/housingrentown (1).csv")
+
+houseOwnership <- houseOwnership %>% 
+    mutate(tract = as.integer(tract*100))
+
+housingPoor <- read.csv("C:/Users/Billy/Desktop/1223/poorhousingconditions.csv")
+housingVacant <- read.csv("C:/Users/Billy/Desktop/1223/vacantpropusps2016q2.csv")
+
+houseOwnership
+housingPoor  #tract
+housingVacant
+
+housing <- addByString(houseOwnership, housingVacant , "tract")
+
+housing <- housing[,-6] #Removing Geocoding column.
+
+housing
+
+```
+
+
+```{r}
+
+childrenLead <- read.csv("C:/Users/Billy/Desktop/1223/Children Lead.csv")
+childrenLead <- tractToInt(childrenLead)
+
+anxiety <- read.csv("C:/Users/Billy/Desktop/1223/Anxiety.csv")
+depression <- read.csv("C:/Users/Billy/Desktop/1223/Depression.csv")
+diabetes <- read.csv("C:/Users/Billy/Desktop/1223/diabetes_all_2016.csv")
+hypertension <- read.csv("C:/Users/Billy/Desktop/1223/Hypertension.csv")
+
+#asthmaUse <- read.csv("C:/Users/Billy/Desktop/1223/dataset_asthma-2017 (1).csv")
+#easthmaUse <- tractToInt(asthmaUse)
+ 
+
+childrenLead
+anxiety
+depression
+diabetes
+hypertension
+#asthmaUse
+
+predictors <- addByString(childrenLead, anxiety, "tract")
+predictors <- addByString(predictors, depression, "tract")
+predictors <- addByString(predictors, diabetes, "tract")
+predictors <- addByString(predictors, hypertension, "tract")
+#predictors <- addByString(predictors, asthmaUse, "tract")
+predictors <- predictors %>% dplyr::select(-GEOID10)
+
+predictors
+```
+
+
+
+Regression
+
+```{r}
+reg <- addByString(housing, predictors, "tract")
+
+reg$TotalPopulation <- as.numeric(gsub(",","",reg$TotalPopulation))
+reg$RenterOccupied <- as.numeric(gsub(",","",reg$RenterOccupied))
+reg$OwnedMortgage <- as.numeric(gsub(",","",reg$OwnedMortgage))
+reg$OwnedFree <- as.numeric(gsub(",","",reg$OwnedFree))
+
+reg1 <- reg %>% 
+  mutate(
+              TotalPopulation = as.integer(as.character(TotalPopulation)),
+              OwnedMortgage = as.integer(as.character(OwnedMortgage)),
+              OwnedFree = as.integer(as.character(OwnedFree)),
+              RenterOccupied = as.integer(as.character(RenterOccupied)),
+              percent.of.vacant.properties = as.double(as.character(percent.of.vacant.properties))
+)
+
+reg1
+
+```
+
+
+
+Cleaning Lead Levels 
+
+40500 and 40600 (Frazer and Fawn twps) are missing data for the 5 year avearge. Averaging their adjacent regions we can find replacemnts. 
+
+459202 is pennsbury Village and we will say is 1.  
+
+or we call tell all three of these to be zero.
+or we can remove themm all together. 
+
+
+
+```{r}
+#For now we can say they are 0
+
+reg1[6,13] <- 0
+reg1[7,13] <- 0
+reg1[202,13] <- 0
+
+reg1
+```
+
+
+Mutating Columns to make them per-population
+
+```{r}
+
+#Anxiety, Depression, and tenure of housing 
+#Anxiety and Depression it is the proportion of those who are currently 
+#taking medication for it. 
+
+reg1 <- reg1 %>% 
+  mutate(anxietyPorportion = XPAN/XPAD) %>% 
+  mutate(anxietyMalePorportion = XMAN/XMAD) %>% 
+  mutate(anxietyFemalePorportion = XWAN/XWAD) %>% 
+  mutate(depressionPorportion = EPAN/EPAD) %>% 
+  mutate(depressionMalePorportion = EMAN/EMAD) %>% 
+  mutate(depressionFemalePorportion = EWAN/EWAD) %>% 
+  mutate(freeTotalPop = OwnedFree/TotalPopulation) %>% 
+  mutate(mortgageTotalPop = OwnedMortgage/TotalPopulation) %>% 
+  mutate(rentTotalPop = RenterOccupied/TotalPopulation) 
+
+#Hypertension
+#Hyper 2 is both diagnosed and medicated.
+
+reg1 <- reg1 %>% 
+  mutate(hyperPorportion = TPAN/TPAD) %>% 
+  mutate(hyper2Porportion = TPAN2/TPAD) %>% 
+  mutate(hyperFemalePorportion = TWAN/TWAD) %>% 
+  mutate(hyperMalePorportion = TMAN/TMAD) %>% 
+  mutate(hyper2MalePorportion = TMAN2/TMAD) %>% 
+  mutate(hyper2FemalePorportion = TWAN2/TWAD)
+
+
+#diabetes 
+
+reg1 <- reg1 %>% 
+  mutate(DiaPorportion = BPAN/BPAD) %>% 
+  mutate(Dia2Porportion = BPAN2/BPAD) %>% 
+  mutate(DiaFemalePorportion = BWAN/BWAD) %>% 
+  mutate(DiaMalePorportion = BMAN/BMAD) %>% 
+  mutate(Dia2MalePorportion = BMAN2/BMAD) %>% 
+  mutate(Dia2FemalePorportion = BWAN2/BWAD)
+
+head(reg1)
+```
+
+Counting the population we can see that this encompases most of Allegehny County
+
+```{r}
+reg1 %>% arrange(desc(TotalPopulation))
+
+reg1 %>% 
+  summarise(
+  count = sum(TotalPopulation)
+)
+```
+
+
+```{r}
+#This moddel might just be the one we want to work with. 
+regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, ResidentialVacancies, percent.of.vacant.properties, TotalPercentEBLL15_18, anxietyPorportion, anxietyMalePorportion, anxietyFemalePorportion, depressionPorportion, depressionMalePorportion, depressionFemalePorportion, rentTotalPop, hyperPorportion, hyper2Porportion, hyperFemalePorportion, hyperMalePorportion, hyper2MalePorportion,hyper2FemalePorportion,DiaPorportion, Dia2Porportion, DiaFemalePorportion, DiaMalePorportion, Dia2MalePorportion, Dia2FemalePorportion)
+
+
+regSmall <- regSmall %>% remove_rownames %>% column_to_rownames(var="tract")
+dataset <- regSmall
+```

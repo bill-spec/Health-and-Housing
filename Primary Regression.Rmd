@@ -1,0 +1,192 @@
+---
+title: "Primary Regression"
+author: "Bill Lang"
+date: "1/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(glmnet)
+library(car)       #vif
+library(rpart)     #Tree
+library(partykit) #Tree Stuff
+library(MASS)
+library(caret)
+```
+
+Reading in the data.
+
+```{r}
+dataset
+```
+
+
+```{r}
+ggplot(gather(data = dataset), aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+```
+
+```{r}
+linearModelData <- dataset %>% dplyr::select(-hyperPorportion,-hyperFemalePorportion,-hyperMalePorportion,-DiaPorportion,-DiaFemalePorportion,-DiaMalePorportion)
+linearModelData
+names(linearModelData)
+```
+
+
+```{r}
+renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties,data = linearModelData)
+summary(renterModel)
+anova(renterModel)
+vif(renterModel)
+plot(renterModel)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+dim(regSmall)
+head(regSmall)
+```
+
+
+
+Plotting to look for non-linearity
+
+```{r}
+pairsData <- regSmall %>% dplyr::select(rentTotalPop, percent.of.vacant.properties,  TotalPercentEBLL15_18, depressionPorportion, TotalPercentEBLL15_18,hyperPorportion, anxietyPorportion,TotalPopulation,DiaPorportion)
+
+pairs(pairsData)
+```
+
+Rent per total population testing model. 
+
+```{r}
+smallNormal <- lm(rentTotalPop ~  percent.of.vacant.properties + I(percent.of.vacant.properties^2), regSmall)
+
+smallPoly <- lm(rentTotalPop ~  poly(percent.of.vacant.properties,2), regSmall)
+
+summary(smallNormal)
+summary(smallPoly)
+```
+
+
+
+
+
+
+
+
+
+
+
+Rent per total population model
+
+```{r}
+
+smallAll <- lm(rentTotalPop ~  percent.of.vacant.properties + I(percent.of.vacant.properties^2) + TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2) +  depressionPorportion + TotalPercentEBLL15_18 + log(hyperPorportion) + anxietyPorportion + TotalPopulation + DiaPorportion + anxietyPorportion*percent.of.vacant.properties, regSmall)
+
+smallAll <- lm(rentTotalPop ~  poly(percent.of.vacant.properties,2)+ TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2) +  depressionPorportion + TotalPercentEBLL15_18 + log(hyperPorportion) + anxietyPorportion + TotalPopulation + DiaPorportion, regSmall)
+
+summary(smallAll)
+
+smallAll2 <- lm(rentTotalPop ~  TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2) +  depressionPorportion + TotalPercentEBLL15_18 + log(hyperPorportion) + anxietyPorportion + DiaPorportion , regSmall)
+
+summary(smallAll)
+
+plot(smallAll)
+
+anova(smallAll)
+
+vif(smallAll)
+```
+
+Percent Vacant
+
+```{r}
+smallAgain <- lm(percent.of.vacant.properties ~ rentTotalPop  +  I(rentTotalPop^2) + TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2) + depressionPorportion + TotalPercentEBLL15_18 + hyperPorportion + anxietyPorportion + I(anxietyPorportion^2) + TotalPopulation + DiaPorportion, regSmall)
+
+summary(smallAgain)
+
+summary(stepAIC(smallAgain))
+
+plot(smallAgain)
+
+vif(smallAgain)
+```
+
+
+
+
+
+Logistic Model 
+
+```{r}
+hist(regSmall$rentTotalPop,300)
+```
+
+```{r}
+class <- regSmall %>% 
+  mutate(rent = ifelse((rentTotalPop >= 0.4), 1, 0))
+head(class)
+
+trainid <- sample(1:nrow(class), nrow(regSmall)*0.8 , replace=F)
+train <- class[trainid,]
+test <- class[-trainid,]
+dim(train); dim(test)
+
+
+logit <- glm(rent ~ percent.of.vacant.properties  + I(percent.of.vacant.properties^2) +  TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2)+  depressionTotalPop + TotalPercentEBLL15_18 + hyperTotalPop + anxietyTotalPop + TotalPopulation + DiaTotalPop, class, family = "binomial")
+
+logitProb <- predict(logit, test, type = "response")
+
+logitPred <- ifelse(logitProb > 0.5, 1, 0)
+
+table(logitPred, test$rent)
+
+mean(logitPred != test$rent)
+```
+
+
+
+
+Checking for overfitting 
+
+```{r}
+trainid <- sample(1:nrow(regSmall), nrow(regSmall)*0.8 , replace=F)
+train <- regSmall[trainid,]
+test <- regSmall[-trainid,]
+dim(train); dim(test)
+```
+
+```{r}
+modelTrain <- lm(rentTotalPop ~ percent.of.vacant.properties  + I(percent.of.vacant.properties^2) +  TotalPercentEBLL15_18 + I(TotalPercentEBLL15_18^2) +  depressionTotalPop + TotalPercentEBLL15_18 + log(hyperTotalPop) + anxietyTotalPop + TotalPopulation + DiaTotalPop, train)
+
+MSE0 <- mean( (predict(modelTrain, test) - test$rentTotalPop)^2 )
+MSE0
+```
+
+Cross Validation using the caret package
+
+```{r}
+train.control <- trainControl(method = "cv", number = 10)
+
+model <- train(rentTotalPop ~., data = pairsData, method = "lm",
+               trControl = train.control)
+
+print(model)
+```
+

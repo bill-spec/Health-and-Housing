@@ -1,0 +1,30 @@
+---
+title: "Functions"
+author: "Bill Lang"
+date: "3/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+Functions for Data Wrangling
+
+```{r}
+addByString <- function(bigFrame, newFrame, string){
+  bigFrame <- bigFrame %>% 
+  inner_join(newFrame, by = string)
+}
+
+
+tractToInt <- function(frame){
+  frame <- frame %>% 
+    mutate(tract = as.integer(as.character(tract)))
+}
+
+```
+
+
