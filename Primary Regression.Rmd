@@ -14,6 +14,7 @@ library(rpart)     #Tree
 library(partykit) #Tree Stuff
 library(MASS)
 library(caret)
+library(leaps)
 ```
 
 Reading in the data.
@@ -30,37 +31,186 @@ ggplot(gather(data = dataset), aes(value)) +
 ```
 
 ```{r}
-linearModelData <- dataset %>% dplyr::select(-hyperPorportion,-hyperFemalePorportion,-hyperMalePorportion,-DiaPorportion,-DiaFemalePorportion,-DiaMalePorportion)
-linearModelData
-names(linearModelData)
+pairs(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties, dataset)
 ```
 
 
 ```{r}
-renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties,data = linearModelData)
+renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +  percent.of.vacant.properties,data = dataset)
+
 summary(renterModel)
+
 anova(renterModel)
+```
+
+
+```{r}
 vif(renterModel)
+```
+
+Collinearity looks safe. 
+
+```{r}
 plot(renterModel)
 ```
 
+For the sake of dealing with outliers we will remove the $20100$ census tract observation. This observation corrosponded to ____ region and was signifigantly impacting the model. 
 
+```{r}
 
+datasetResidual <- dataset[!row.names(dataset) %in% 20100,]
+datasetResidual
 
-
-
-
-
-
-
-
-
+```
 
 
 ```{r}
-dim(regSmall)
-head(regSmall)
+renterModelResidual <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion,data = datasetResidual)
+
+summary(renterModelResidual)
+
+anova(renterModelResidual)
 ```
+
+
+```{r}
+vif(renterModelResidual)
+```
+
+Collinearity looks safe. 
+
+```{r}
+par(mfrow = c(2,2))
+plot(renterModelResidual)
+```
+
+```{r}
+names(renterModelResidual)
+```
+
+Best Subset Selection. Looking at the plots we can see that we should probably remove those variables that attempt to find interaction between diabetes and hypertension. The average lead amoung for the region has also been removed in all the variable selective models. It will be left in for the time being for heiracrchical organziation as it would remain as an interaction term between anxiety and depression anyways. 
+
+**Can be imporved by only using the training datasets to select as this will be have high varience**
+
+```{r}
+
+regfull <- regsubsets(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion  + percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion,data = datasetResidual,nvmax = 13)
+regsummary <-summary(regfull)
+
+names(regsummary)
+
+
+plot(regfull, scale = "r2")
+plot(regfull, scale = "adjr2")
+plot(regfull, scale = "Cp")
+plot(regfull, scale = "bic")
+
+```
+
+Rebuilding the model again after the subset selection process. THis model is approaching what would be considered a final model. 
+
+```{r}
+renterModelAfterSub <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +   percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion,data = datasetResidual)
+
+summary(renterModelAfterSub)
+
+anova(renterModelAfterSub)
+```
+
+A partial F-test between makes it clear that yes, those two interactions were not signifigant. The Cumulative distribution of our F-values (0.8898) lets us know there is no signifigance between the two. 
+
+```{r}
+anova(renterModelAfterSub,renterModelResidual)
+```
+
+Collinearity is much higher between our interaction terms than before but if that is okay it looks safe to use. 
+
+```{r}
+vif(renterModelAfterSub)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(renterModelAfterSub)
+```
+
+```{r}
+names(renterModelAfterSub)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Checking for overfitting. There is little reason to use a model like this for prediction; however, we can still go through the motions of contructing a good model to prvent overfitting. 
+
+```{r}
+trainid <- sample(1:nrow(datasetResidual), nrow(datasetResidual)*0.8 , replace=F)
+train <- datasetResidual[trainid,]
+test <- datasetResidual[-trainid,]
+dim(train); dim(test)
+```
+
+```{r}
+renterModelTrain <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion,data = train)
+
+MSE0 <- mean( (predict(renterModelTrain, test) - test$rentTotalPop)^2 )
+MSE0
+```
+
+Cross Validation using the caret package. The difference between our Cross Validated Error and our origional simple train-test set is only $0.016$. We can say that it is very likely the true error rate of the model is close to $0.03$ or for a root squared error $0.12$ which is about $1/2$ the standard deviation of the rentTotalPop  variable ($0.21$). 
+
+```{r}
+train.control <- trainControl(method = "cv", number = 10)
+
+model <- train(rentTotalPop ~., data = datasetResidual, method = "lm",
+               trControl = train.control)
+
+print(model)
+
+CVMSE <- (model$results[2])^2
+as.double(abs(MSE0 - CVMSE))
+```
+
+```{r}
+sd(datasetResidual$rentTotalPop)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
