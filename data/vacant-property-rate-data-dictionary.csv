@@ -1,0 +1,6 @@
+Field Name,Field Description,Example 1,Example 2,Additional Data Details
+Geoid,Census tract - including the PA state code and Allegheny County code,42003010300,42003090300,In these examples the first two digits (42) are the PA state code; the next three digits (003) are the Allegheny County code.
+Tract1,Census Tract code ,10300,90300,
+ResidentialBuildings,Total Number of residential buildings in each census tract,214,2307,
+ResidentialVacancies ,Number of residential buildings that are vacant in each census tract,99,0,
+% of vacant properties,(Number of vacant buildings)/(total number of residential buildings),0.06325876,0,
