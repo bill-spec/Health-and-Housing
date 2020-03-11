@@ -42,6 +42,9 @@ summary(renterModel)
 
 anova(renterModel)
 ```
+```{r}
+dataset$rentTotalPop
+```
 
 
 ```{r}

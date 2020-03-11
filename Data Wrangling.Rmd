@@ -11,15 +11,16 @@ library(tidyverse)
 ```
 
 
+Pullin the data in. This was used by manual downloading the data to my github but could have been down with more elegant use of the WRPDC API and the SQL functionality of Rstuido (or just python). Regardless, the data is read in and merged into a single dataset to be used for the regression.
 
 ```{r}
-houseOwnership <- read.csv("C:/Users/Billy/Desktop/1223/housingrentown (1).csv")
+houseOwnership <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/housingrentown%20(1).csv?token=ANWDS6XNV7UDBU2K74RWHLS6NBZE2"))
 
 houseOwnership <- houseOwnership %>% 
     mutate(tract = as.integer(tract*100))
 
-housingPoor <- read.csv("C:/Users/Billy/Desktop/1223/poorhousingconditions.csv")
-housingVacant <- read.csv("C:/Users/Billy/Desktop/1223/vacantpropusps2016q2.csv")
+housingPoor <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/poorhousingconditions.csv?token=ANWDS6VKUI7U6SSV7CDNC4K6NBZCS"))
+housingVacant <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/vacantpropusps2016q2.csv?token=ANWDS6UB3JRTY4OQFQPUJN26NBZG6"))
 
 houseOwnership
 housingPoor  #tract
@@ -36,17 +37,14 @@ housing
 
 ```{r}
 
-childrenLead <- read.csv("C:/Users/Billy/Desktop/1223/Children Lead.csv")
+childrenLead <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/Children%20Lead.csv?token=ANWDS6RTLZTONJHOIEG4R7S6NBZJM"))
 childrenLead <- tractToInt(childrenLead)
 
-anxiety <- read.csv("C:/Users/Billy/Desktop/1223/Anxiety.csv")
-depression <- read.csv("C:/Users/Billy/Desktop/1223/Depression.csv")
-diabetes <- read.csv("C:/Users/Billy/Desktop/1223/diabetes_all_2016.csv")
-hypertension <- read.csv("C:/Users/Billy/Desktop/1223/Hypertension.csv")
+anxiety <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/Anxiety.csv?token=ANWDS6TUWZKJZPYUNHLA2S26NBZL2"))
+depression <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/Depression.csv?token=ANWDS6WPEYI3WKOME57EGNK6NBZRK"))
+diabetes <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/diabetes_all_2016.csv?token=ANWDS6WUFHOZ7UV5XUCKACC6NBZPQ"))
+hypertension <- read.csv(url("https://raw.githubusercontent.com/bill-spec/Health-and-Housing/master/data/Hypertension.csv?token=ANWDS6XTPSMERYEVNKCGW2S6NBZQS"))
 
-#asthmaUse <- read.csv("C:/Users/Billy/Desktop/1223/dataset_asthma-2017 (1).csv")
-#easthmaUse <- tractToInt(asthmaUse)
- 
 
 childrenLead
 anxiety
@@ -66,8 +64,7 @@ predictors
 ```
 
 
-
-Regression
+Removal of any probalmatic whitespace. 
 
 ```{r}
 reg <- addByString(housing, predictors, "tract")
@@ -177,4 +174,6 @@ regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, R
 
 regSmall <- regSmall %>% remove_rownames %>% column_to_rownames(var="tract")
 dataset <- regSmall
+
+#write.csv()
 ```
