@@ -1,0 +1,6 @@
+Field Name,Field Description,Example 1,Example 2,Additional Data Details
+CensusTract,Allegheny County Census Tract,103,1207,
+TotalPopulation,Total Population in occupied housing units,857,1353,
+OwnedMortgage,Number of individuals living in housing unit that is owned with a mortage or a loan,81,1660,This does not reflect the number of housing units owned with a mortage
+OwnedFree,Number of individuals living in housing units that are owned free,108,650,This does not reflect the number of homeowners
+Renter Occupied,Number of individuals living in housing units that are rented,1335,507,

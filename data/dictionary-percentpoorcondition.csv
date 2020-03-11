@@ -1,0 +1,3 @@
+Field Name,Field Description,Example 1,Example 2,Additional Data Details
+TRACT,Census Tract,20300,431100,Only contains census tracts within Allegheny county
+PPoorCon,Percent of residential buildings that are in poor or worse condition,0.12404,0.008713,This number was calculated by an independent contractor for Allegheny County Economic Development (REINVESTMENT Fund). There are instances which are NULL or 0 due to an insufficient amount of sampling. 
