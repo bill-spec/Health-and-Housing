@@ -173,7 +173,10 @@ regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, R
 
 
 regSmall <- regSmall %>% remove_rownames %>% column_to_rownames(var="tract")
-dataset <- regSmall
+dataSet <- regSmall
+```
 
-#write.csv()
+
+```{r}
+write.csv(dataSet, file = "C:/Users/Billy/Desktop/1223 Dataset/dataSet.csv")
 ```

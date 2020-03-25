@@ -11,7 +11,7 @@ library(tidyverse)
 library(glmnet)
 library(car)       #vif
 library(rpart)     #Tree
-library(partykit) #Tree Stuff
+library(partykit) #Special Tree Stuff
 library(MASS)
 library(caret)
 library(leaps)
@@ -20,30 +20,32 @@ library(leaps)
 Reading in the data.
 
 ```{r}
-dataset
+dataSet
 ```
 
 
 ```{r}
-ggplot(gather(data = dataset), aes(value)) + 
+ggplot(gather(data = dataSet), aes(value)) + 
     geom_histogram(bins = 10) + 
     facet_wrap(~key, scales = 'free_x')
 ```
 
 ```{r}
-pairs(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties, dataset)
+pairs(rentTotalPop ~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties, dataSet)
 ```
 
 
 ```{r}
-renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +  percent.of.vacant.properties,data = dataset)
+renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +  percent.of.vacant.properties,data = dataSet)
 
 summary(renterModel)
 
 anova(renterModel)
 ```
+
+
 ```{r}
-dataset$rentTotalPop
+dataSet$rentTotalPop
 ```
 
 
@@ -54,16 +56,15 @@ vif(renterModel)
 Collinearity looks safe. 
 
 ```{r}
+par(mfrow = c(2,2))
 plot(renterModel)
 ```
 
-For the sake of dealing with outliers we will remove the $20100$ census tract observation. This observation corrosponded to ____ region and was signifigantly impacting the model. 
+For the sake of dealing with outliers we will remove the $20100$ census tract observation. This observation was signifigantly impacting the model. 
 
 ```{r}
-
-datasetResidual <- dataset[!row.names(dataset) %in% 20100,]
+datasetResidual <- dataSet[!row.names(dataset) %in% 20100,]
 datasetResidual
-
 ```
 
 
@@ -96,7 +97,7 @@ Best Subset Selection. Looking at the plots we can see that we should probably r
 **Can be imporved by only using the training datasets to select as this will be have high varience**
 
 ```{r}
-
+?regsubsets
 regfull <- regsubsets(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion  + percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion,data = datasetResidual,nvmax = 13)
 regsummary <-summary(regfull)
 
