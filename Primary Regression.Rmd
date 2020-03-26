@@ -15,6 +15,7 @@ library(partykit) #Special Tree Stuff
 library(MASS)
 library(caret)
 library(leaps)
+library(ggthemes)
 ```
 
 Reading in the data.
@@ -23,11 +24,18 @@ Reading in the data.
 dataSet
 ```
 
+```{r}
+dataSet %>% select()
+```
+
+
 
 ```{r}
 ggplot(gather(data = dataSet), aes(value)) + 
     geom_histogram(bins = 10) + 
-    facet_wrap(~key, scales = 'free_x')
+    facet_wrap(~key, scales = 'free_x')+
+  theme_fivethirtyeight()
+  
 ```
 
 ```{r}
