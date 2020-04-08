@@ -173,7 +173,8 @@ regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, R
 
 
 regSmall <- regSmall %>% remove_rownames %>% column_to_rownames(var="tract")
-dataSet <- regSmall
+dataSet <- cbind(regSmall, "Observation.Number" = c(1:387))
+
 ```
 
 

@@ -16,6 +16,7 @@ library(MASS)
 library(caret)
 library(leaps)
 library(ggthemes)
+library(alr3)
 ```
 
 Reading in the data.
@@ -25,7 +26,7 @@ dataSet
 ```
 
 ```{r}
-dataSet %>% select()
+cor(dataSet)
 ```
 
 
@@ -35,45 +36,245 @@ ggplot(gather(data = dataSet), aes(value)) +
     geom_histogram(bins = 10) + 
     facet_wrap(~key, scales = 'free_x')+
   theme_fivethirtyeight()
-  
 ```
 
 ```{r}
-pairs(rentTotalPop ~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + ResidentalBuildings + percent.of.vacant.properties, dataSet)
+pairs(rentTotalPop ~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion  + percent.of.vacant.properties, dataSet)
 ```
 
+Single Variable Models
 
 ```{r}
-renterModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +  percent.of.vacant.properties,data = dataSet)
+anxietyModel <- lm(rentTotalPop~anxietyPorportion,dataSet)
+depressionModel <- lm(rentTotalPop~depressionPorportion,dataSet)
+hypertensionModel <- lm(rentTotalPop~hyper2Porportion,dataSet)
+diabetesModel <- lm(rentTotalPop~Dia2Porportion,dataSet)
 
+summary(anxietyModel)$coef[2,1]
+summary(depressionModel)$coef[2,1]
+summary(hypertensionModel)$coef[2,1]
+summary(diabetesModel)$coef[2,1]
+```
+
+Multi-Variate Models.
+Collinearity looks okay. 
+
+```{r}
+renterModel <- lm(rentTotalPop ~  anxietyPorportion +depressionPorportion + hyper2Porportion + Dia2Porportion, data = dataSet)
 summary(renterModel)
 
 anova(renterModel)
-```
 
-
-```{r}
-dataSet$rentTotalPop
-```
-
-
-```{r}
 vif(renterModel)
 ```
 
-Collinearity looks safe. 
+
+**Adding in the interaction terms**
+
+Test for Coincidence
+
+```{r}
+renterModelInteraction <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+
+anova(renterModel,renterModelInteraction)
+```
+
+Regression SUm of Squares
+
+```{r}
+sum((predict(renterModel,dataSet) - mean(dataSet$rentTotalPop))^2) 
+sum((predict(renterModelInteraction,dataSet) - mean(dataSet$rentTotalPop))^2) 
+```
+
+Test for the parallelism
+
+```{r}
+renterModelInteractionFull <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+
+RenterModelInteraction1 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+
+RenterModelInteraction2 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+
+RenterModelInteraction3 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+
+RenterModelInteraction4 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion, data = dataSet)
+
+```
+
+```{r}
+anova(RenterModelInteraction1,renterModelInteractionFull)
+anova(RenterModelInteraction2, renterModelInteractionFull)
+anova(RenterModelInteraction3,renterModelInteractionFull)
+anova(RenterModelInteraction4, renterModelInteractionFull)
+```
+
+Trimmed Model
+
+```{r}
+renterModelInteractionTrimmed <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = dataSet)
+
+summary(renterModelInteractionTrimmed)
+vif(renterModelInteractionTrimmed)
+```
+
+```{r}
+dataSet <- dataSet %>% mutate(rentSqaure = rentTotalPop^2)
+```
 
 ```{r}
 par(mfrow = c(2,2))
-plot(renterModel)
+plot(renterModelInteractionTrimmed)
 ```
-
-For the sake of dealing with outliers we will remove the $20100$ census tract observation. This observation was signifigantly impacting the model. 
 
 ```{r}
-datasetResidual <- dataSet[!row.names(dataset) %in% 20100,]
-datasetResidual
+plot(renterModelInteractionTrimmed$fitted.values,rstudent(renterModelInteractionTrimmed))
 ```
+
+**Diagnostics**
+
+Testing Independence
+
+```{r}
+a <- rstudent(renterModelInteractionTrimmed)
+b <- c(1:387)
+df <- data.frame("Studentized Residuals" = a, "Observation.Number"<- b)
+```
+
+
+```{r}
+par(mar = c(3, 3, 2, 1), # Dist' from plot to side of page
+    mgp = c(2, 0.4, 0), # Dist' plot to label
+    las = 1, # Rotate y-axis text
+    tck = -.01) # Reduce tick length
+plot(jitter(df$X.Observation.Number.....b),jitter(df$Studentized.Residuals), type = 'b',
+     pch = 20, # Shape: circles that can filed
+     xlab = "Observation Number", ylab = "Studentized Residuals", # Labels
+     axes = FALSE, # Don't plot the axes
+     frame.plot = FALSE, # Remove the frame 
+     xlim = c(0, 400), ylim = c(-3, 6), # Limits
+     panel.first = abline(h = c(-2, 0,2,4,6), col = "grey80"))
+abline(h = 0, col ='red')
+at = pretty(df$X.Observation.Number.....b)
+mtext(side = 1, text = at, at = at, col = "grey20", line = 1, cex = 0.9)
+at = pretty(df$Studentized.Residuals)
+mtext(side = 2, text = at, at = at, col = "grey20", line = 1, cex = 0.9)
+title("Table (Number)", adj = 1, 
+      cex.main = 0.8, font.main = 2, col.main = "black")
+```
+
+Homoskedasticity 
+
+```{r}
+a <- rstudent(renterModelInteractionTrimmed)
+b <- renterModelInteractionTrimmed$fitted.values
+df <- data.frame("Studentized Residuals" = a, "Fitted Values"<- b)
+df
+```
+
+```{r}
+par(mar = c(3, 3, 2, 1), # Dist' from plot to side of page
+    mgp = c(2, 0.4, 0), # Dist' plot to label
+    las = 1, # Rotate y-axis text
+    tck = -.01) # Reduce tick length
+plot(jitter(df$X.Fitted.Values.....b),jitter(df$Studentized.Residuals),
+     pch = 20, # Shape: circles that can filed
+     xlab = "Fitted Values", ylab = "Studentized Residuals", # Labels
+     axes = FALSE, # Don't plot the axes
+     frame.plot = FALSE, # Remove the frame 
+     xlim = c(0, 0.8), ylim = c(-4, 6), # Limits
+     panel.first = abline(h = c(-4,-2, 0,2,4,6), col = "grey80"))
+abline(h = 0, col ='red')
+at = pretty(df$X.Fitted.Values.....b)
+mtext(side = 1, text = at, at = at, col = "grey20", line = 1, cex = 0.9)
+at = pretty(df$Studentized.Residuals)
+mtext(side = 2, text = at, at = at, col = "grey20", line = 1, cex = 0.9)
+title("Table (Number)", adj = 1, 
+      cex.main = 0.8, font.main = 2, col.main = "black")
+```
+
+
+
+
+
+
+Unqiue Observations
+
+```{r}
+doubleAverage <- ((2*(7+1))/dim(dataSet)[1])
+criticalValue <- qt(c(.025, .975), df=378) 
+
+cooksDistance <- cooks.distance(renterModelInteractionTrimmed)
+leverage <- hatvalues(renterModelInteractionTrimmed)
+stud <- rstudent(renterModelInteractionTrimmed)
+obs <- c(1:387)
+
+dfObs <- data.frame(obs,leverage, cooksDistance, stud)
+dfObs
+```
+
+```{r}
+highLeverage <- dfObs %>% filter(leverage > doubleAverage)
+outlier <- dfObs %>% filter(stud > criticalValue[1] | stud < criticalValue[2])
+influential <- dfObs %>% filter(cooksDistance > 1)
+```
+
+We find no influential points but there is a signifigant amount of outliers. 
+
+```{r}
+leverage <- highLeverage
+outliers <- outlier
+
+hist(highLeverage$leverage, 30)
+hist(outliers$stud,15)
+
+oddObservations <- leverage %>% full_join(outliers, by = c("obs", "leverage", "cooksDistance", "stud")) 
+oddObservations
+```
+
+**Working with located outliers**
+
+```{r}
+superSetOutliers <- dataSet[outliers$obs,]
+superSetLeverage <- dataSet[leverage$obs,]
+
+lev <- superSetLeverage %>% summarise_all(mean)
+out <- superSetOutliers %>% summarise_all(mean)
+```
+
+
+```{r}
+subSet <- dataSet[-oddObservations$obs,] 
+hm <- subSet %>% summarise_all(mean)
+sd <- dataSet %>% summarise_all(sd)
+names <- c("leverage","Outliers","Rest of Data","Standard Deviation across all Data")
+df_compare <- rbind(hm,dfOdd,sd)
+df_compare <- df_compare %>% column_to_rownames(names)
+```
+
+
+```{r}
+modelSubSet <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = subSet)
+
+summary(modelSubSet)
+vif(modelSubSet)
+```
+
+```{r}
+dataSet <- dataSet %>% mutate(rentSqaure = rentTotalPop^2)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(modelSubSet)
+```
+
+```{r}
+plot(modelSubSet$fitted.values,rstudent(modelSubSet))
+```
+
+
+
+
 
 
 ```{r}
