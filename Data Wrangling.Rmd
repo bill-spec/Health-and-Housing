@@ -166,9 +166,9 @@ reg1 %>%
 )
 ```
 
+Large Dataset
 
 ```{r}
-#This moddel might just be the one we want to work with. 
 regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, ResidentialVacancies, percent.of.vacant.properties, TotalPercentEBLL15_18, anxietyPorportion, anxietyMalePorportion, anxietyFemalePorportion, depressionPorportion, depressionMalePorportion, depressionFemalePorportion, rentTotalPop, hyperPorportion, hyper2Porportion, hyperFemalePorportion, hyperMalePorportion, hyper2MalePorportion,hyper2FemalePorportion,DiaPorportion, Dia2Porportion, DiaFemalePorportion, DiaMalePorportion, Dia2MalePorportion, Dia2FemalePorportion)
 
 
@@ -177,7 +177,17 @@ dataSet <- cbind(regSmall, "Observation.Number" = c(1:387))
 
 ```
 
+Small Dataset
+
+```{r}
+regSmall2 <- regSmall %>% rownames_to_column()
+regSmall2 <- regSmall2 %>% dplyr::select(-anxietyMalePorportion,-anxietyFemalePorportion,-depressionMalePorportion,-depressionFemalePorportion,-hyperFemalePorportion,-hyperMalePorportion,-hyperPorportion,-hyper2MalePorportion,-hyper2FemalePorportion,-DiaPorportion,-DiaFemalePorportion,-DiaMalePorportion,-Dia2MalePorportion,-Dia2FemalePorportion)
+regSmall2 <- regSmall2 %>% column_to_rownames(var = "rowname")
+dataSetSmall <- cbind(regSmall2, "Observation.Number" = c(1:387))
+```
+
 
 ```{r}
 write.csv(dataSet, file = "C:/Users/Billy/Desktop/1223 Dataset/dataSet.csv")
+write.csv(dataSetSmall, file = "C:/Users/Billy/Desktop/1223 Dataset/dataSetSmall.csv")
 ```
