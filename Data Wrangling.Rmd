@@ -76,12 +76,14 @@ reg$OwnedFree <- as.numeric(gsub(",","",reg$OwnedFree))
 
 reg1 <- reg %>% 
   mutate(
-              TotalPopulation = as.integer(as.character(TotalPopulation)),
-              OwnedMortgage = as.integer(as.character(OwnedMortgage)),
-              OwnedFree = as.integer(as.character(OwnedFree)),
-              RenterOccupied = as.integer(as.character(RenterOccupied)),
-              percent.of.vacant.properties = as.double(as.character(percent.of.vacant.properties))
-)
+              totalPopulation = as.integer(as.character(TotalPopulation)),
+              ownedMortgage = as.integer(as.character(OwnedMortgage)),
+              ownedFree = as.integer(as.character(OwnedFree)),
+              renterOccupied = as.integer(as.character(RenterOccupied)),
+              vacantProportion = as.double(as.character(percent.of.vacant.properties)),
+              residentialVacancies = as.integer(as.character(ResidentialVacancies)),
+              residentialBuildings = as.integer(as.character(ResidentalBuildings))
+              ) %>% select(-TotalPopulation,-OwnedMortgage,-OwnedFree,-RenterOccupied,-percent.of.vacant.properties)
 
 reg1
 
@@ -120,37 +122,37 @@ Mutating Columns to make them per-population
 #taking medication for it. 
 
 reg1 <- reg1 %>% 
-  mutate(anxietyPorportion = XPAN/XPAD) %>% 
-  mutate(anxietyMalePorportion = XMAN/XMAD) %>% 
-  mutate(anxietyFemalePorportion = XWAN/XWAD) %>% 
-  mutate(depressionPorportion = EPAN/EPAD) %>% 
-  mutate(depressionMalePorportion = EMAN/EMAD) %>% 
-  mutate(depressionFemalePorportion = EWAN/EWAD) %>% 
-  mutate(freeTotalPop = OwnedFree/TotalPopulation) %>% 
-  mutate(mortgageTotalPop = OwnedMortgage/TotalPopulation) %>% 
-  mutate(rentTotalPop = RenterOccupied/TotalPopulation) 
+  mutate(anxietyProportion = XPAN/XPAD) %>% 
+  mutate(anxietyMaleProportion = XMAN/XMAD) %>% 
+  mutate(anxietyFemaleProportion = XWAN/XWAD) %>% 
+  mutate(depressionProportion = EPAN/EPAD) %>% 
+  mutate(depressionMaleProportion = EMAN/EMAD) %>% 
+  mutate(depressionFemaleProportion = EWAN/EWAD) %>% 
+  mutate(freeProportion = ownedFree/totalPopulation) %>% 
+  mutate(mortgageProportion = ownedMortgage/totalPopulation) %>% 
+  mutate(rentProportion = renterOccupied/totalPopulation) 
 
 #Hypertension
 #Hyper 2 is both diagnosed and medicated.
 
 reg1 <- reg1 %>% 
-  mutate(hyperPorportion = TPAN/TPAD) %>% 
-  mutate(hyper2Porportion = TPAN2/TPAD) %>% 
-  mutate(hyperFemalePorportion = TWAN/TWAD) %>% 
-  mutate(hyperMalePorportion = TMAN/TMAD) %>% 
-  mutate(hyper2MalePorportion = TMAN2/TMAD) %>% 
-  mutate(hyper2FemalePorportion = TWAN2/TWAD)
+  mutate(hyperProportion = TPAN/TPAD) %>% 
+  mutate(hyperTreatedProportion = TPAN2/TPAD) %>% 
+  mutate(hyperFemaleProportion = TWAN/TWAD) %>% 
+  mutate(hyperMaleProportion = TMAN/TMAD) %>% 
+  mutate(hyperTreatedMaleProportion = TMAN2/TMAD) %>% 
+  mutate(hyperTreatedFemaleProportion = TWAN2/TWAD)
 
 
 #diabetes 
 
 reg1 <- reg1 %>% 
-  mutate(DiaPorportion = BPAN/BPAD) %>% 
-  mutate(Dia2Porportion = BPAN2/BPAD) %>% 
-  mutate(DiaFemalePorportion = BWAN/BWAD) %>% 
-  mutate(DiaMalePorportion = BMAN/BMAD) %>% 
-  mutate(Dia2MalePorportion = BMAN2/BMAD) %>% 
-  mutate(Dia2FemalePorportion = BWAN2/BWAD)
+  mutate(diabetesProportion = BPAN/BPAD) %>% 
+  mutate(diabetesTreatedProportion = BPAN2/BPAD) %>% 
+  mutate(diabetesFemaleProportion = BWAN/BWAD) %>% 
+  mutate(diabetesMaleProportion= BMAN/BMAD) %>% 
+  mutate(diabetesTreatedMaleProportion = BMAN2/BMAD) %>% 
+  mutate(diabetesTreatedFemaleProportion = BWAN2/BWAD)
 
 head(reg1)
 ```
@@ -158,36 +160,40 @@ head(reg1)
 Counting the population we can see that this encompases most of Allegehny County
 
 ```{r}
-reg1 %>% arrange(desc(TotalPopulation))
+reg1 %>% arrange(desc(totalPopulation))
 
 reg1 %>% 
   summarise(
-  count = sum(TotalPopulation)
+  count = sum(totalPopulation)
 )
 ```
 
 Large Dataset
 
 ```{r}
-regSmall <- reg1 %>% dplyr::select(tract, TotalPopulation,ResidentalBuildings, ResidentialVacancies, percent.of.vacant.properties, TotalPercentEBLL15_18, anxietyPorportion, anxietyMalePorportion, anxietyFemalePorportion, depressionPorportion, depressionMalePorportion, depressionFemalePorportion, rentTotalPop, hyperPorportion, hyper2Porportion, hyperFemalePorportion, hyperMalePorportion, hyper2MalePorportion,hyper2FemalePorportion,DiaPorportion, Dia2Porportion, DiaFemalePorportion, DiaMalePorportion, Dia2MalePorportion, Dia2FemalePorportion)
+regularData <- reg1[,-(9:38)]
+regularData <- na.omit(regularData)
 
-
-regSmall <- regSmall %>% remove_rownames %>% column_to_rownames(var="tract")
-dataSet <- cbind(regSmall, "Observation.Number" = c(1:387))
-
+regularData <- regularData %>% remove_rownames %>% column_to_rownames(var="tract")
+dataSetFull <- cbind(regularData, "Observation.Number" = c(1:380))
+dataSetFull
+cor(dataSetFull)
 ```
 
 Small Dataset
 
 ```{r}
-regSmall2 <- regSmall %>% rownames_to_column()
-regSmall2 <- regSmall2 %>% dplyr::select(-anxietyMalePorportion,-anxietyFemalePorportion,-depressionMalePorportion,-depressionFemalePorportion,-hyperFemalePorportion,-hyperMalePorportion,-hyperPorportion,-hyper2MalePorportion,-hyper2FemalePorportion,-DiaPorportion,-DiaFemalePorportion,-DiaMalePorportion,-Dia2MalePorportion,-Dia2FemalePorportion)
-regSmall2 <- regSmall2 %>% column_to_rownames(var = "rowname")
-dataSetSmall <- cbind(regSmall2, "Observation.Number" = c(1:387))
+dataSet <- dataSetFull[,-c(1:6,9:11,13:14,16:17,19:22,24,26:30,32:35)]
+dataSet <- dataSet[,c(6,4,5,7,8,1,2,3,9)]
+dataSet
+```
+
+```{r}
+dataSet
 ```
 
 
 ```{r}
-write.csv(dataSet, file = "C:/Users/Billy/Desktop/1223 Dataset/dataSet.csv")
-write.csv(dataSetSmall, file = "C:/Users/Billy/Desktop/1223 Dataset/dataSetSmall.csv")
+write.csv(dataSetFull, file = "C:/Users/Billy/Desktop/1223 Dataset/Full_Data_Set.csv")
+write.csv(dataSet, file = "C:/Users/Billy/Desktop/1223 Dataset/Used_Data_Set.csv")
 ```

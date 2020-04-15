@@ -23,34 +23,44 @@ library(moments)
 Reading in the data.
 
 ```{r}
+head(dataSetFull)
 head(dataSet)
-head(dataSetSmall)
 ```
 
 ```{r}
-cor(dataSetSmall)
+cor(dataSet)
 ```
 
 
-
 ```{r}
-ggplot(gather(data = dataSetSmall), aes(value)) + 
+ggplot(gather(data = dataSet), aes(value)) + 
     geom_histogram(bins = 10) + 
     facet_wrap(~key, scales = 'free_x')+
   theme_fivethirtyeight()
 ```
 
 ```{r}
-pairs(rentTotalPop ~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion  + percent.of.vacant.properties, dataSet)
+plot(dataSet[1:5])
+plot(dataSet[,c(1,6:8)])
 ```
+
+```{r}
+model1 <- lm(vacantProportion~ TotalPercentEBLL15_18 + poly(depressionProportion,1) + poly(rentProportion,1) ,data = dataSet)
+model2 <- lm(vacantProportion~ poly(TotalPercentEBLL15_18,2)+ poly(depressionProportion,2) + poly(rentProportion,2), data = dataSet)
+model3 <- lm(vacantProportion~ poly(TotalPercentEBLL15_18,3) + poly(depressionProportion,3) + poly(rentProportion,3)+ poly(anxietyProportion,3), data = dataSet)
+
+anova(model1,model2,model3)
+summary(model3)
+```
+
 
 Single Variable Models
 
 ```{r}
-anxietyModel <- lm(rentTotalPop~anxietyPorportion,dataSetSmall)
-depressionModel <- lm(rentTotalPop~depressionPorportion,dataSetSmall)
-hypertensionModel <- lm(rentTotalPop~hyper2Porportion,dataSetSmall)
-diabetesModel <- lm(rentTotalPop~Dia2Porportion,dataSetSmall)
+anxietyModel <- lm(rentProportion~anxietyProportion,dataSet)
+depressionModel <- lm(rentProportion~depressionProportion,dataSet)
+hypertensionModel <- lm(rentProportion~hyperTreatedProportion,dataSet)
+diabetesModel <- lm(rentProportion~diabetesTreatedProportion,dataSet)
 
 summary(anxietyModel)$coef[2,1]
 summary(depressionModel)$coef[2,1]
@@ -62,7 +72,7 @@ Multi-Variate Models.
 Collinearity looks okay. 
 
 ```{r}
-renterModel <- lm(rentTotalPop ~  anxietyPorportion +depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation, data = dataSetSmall)
+renterModel <- lm(rentProportion ~.-Observation.Number, data = dataSet)
 summary(renterModel)
 
 anova(renterModel)
@@ -78,7 +88,7 @@ Test for Coincidence
 This is effectively our maximum model.
 
 ```{r}
-renterModelInteraction <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSetSmall)
+renterModelInteraction <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion + TotalPercentEBLL15_18:hyperTreatedProportion + TotalPercentEBLL15_18:diabetesTreatedProportion, data = dataSet)
 
 anova(renterModel,renterModelInteraction)
 ```
@@ -86,15 +96,17 @@ anova(renterModel,renterModelInteraction)
 Test for the parallelism
 
 ```{r}
-renterModelInteractionFull <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion +  Dia2Porportion + TotalPopulation + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
 
-RenterModelInteraction1 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
 
-RenterModelInteraction2 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation+ TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+renterModelInteractionFull <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion + TotalPercentEBLL15_18:hyperTreatedProportion + TotalPercentEBLL15_18:diabetesTreatedProportion, data = dataSet)
 
-RenterModelInteraction3 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation +TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:Dia2Porportion, data = dataSet)
+RenterModelInteraction1 <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:depressionProportion + TotalPercentEBLL15_18:hyperTreatedProportion + TotalPercentEBLL15_18:diabetesTreatedProportion, data = dataSet)
 
-RenterModelInteraction4 <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation +TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion, data = dataSet)
+RenterModelInteraction2 <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:hyperTreatedProportion + TotalPercentEBLL15_18:diabetesTreatedProportion, data = dataSet)
+
+RenterModelInteraction3 <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion + TotalPercentEBLL15_18:diabetesTreatedProportion, data = dataSet)
+
+RenterModelInteraction4 <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion + TotalPercentEBLL15_18:hyperTreatedProportion, data = dataSet)
 
 ```
 
@@ -108,27 +120,49 @@ anova(RenterModelInteraction4, renterModelInteractionFull)
 Trimmed Model; Full Model
 
 ```{r}
-fullModel <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation +  TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = dataSetSmall)
+fullModel <- lm(rentProportion~.-Observation.Number+ TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = dataSet)
 
 summary(fullModel)
 vif(fullModel)
 ```
 
+Best Subset Selection. 
+
+Looking at the plots we can see that we should probably remove those variables that attempt to find interaction between diabetes and hypertension. The average lead amoung for the region has also been removed in all the variable selective models. It will be left in for the time being for heiracrchical organziation as it would remain as an interaction term between anxiety and depression anyways. 
+
+**Can be imporved by only using the training datasets to select as this will be have high varience**
+
 ```{r}
-dataSetSmall <- dataSet %>% mutate(rentSqaure = rentTotalPop^2)
+
+regfull <- regsubsets(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = dataSet,nvmax = 11)
+
+regsummary <-summary(regfull)
+regsummary
+
+
+plot(regfull, scale = "r2")
+plot(regfull, scale = "adjr2")
+plot(regfull, scale = "Cp")
+
 ```
 
 ```{r}
-?histogram
-histogram(rstudent(fullModel), breaks = 50,
+fullModel <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = dataSet)
+summary(fullModel)
+
+summary(fullModel)
+vif(fullModel)
+```
+
+
+
+```{r}
+
+histogram(rstudent(fullModel), breaks = 75,
      xlab = "Frequency", ylab = "Studentized Residuals",               # Labels
      axes = FALSE,                                                      # Don't plot the axes
      frame.plot = FALSE,                                                 # Remove the frame 
-     xlim = c(-4,6), ylim = c(0, 10), col = "grey80")      
-
-# Limits
-     panel.first = abline(h = c(-2, 0,2,4,6), col = "grey80"))
-
+     xlim = c(-4,6), ylim = c(0,6), col = "grey80")      
 
 skewness(rstudent(fullModel))
 kurtosis(rstudent(fullModel))
@@ -139,7 +173,6 @@ kurtosis(rstudent(fullModel))
 par(mfrow = c(2,2))
 plot(fullModel)
 ```
-
 
 **Diagnostics**
 
@@ -171,6 +204,7 @@ mtext(side = 2, text = at, at = at, col = "grey20", line = 1, cex = 0.9)
 #title("Table (Number)", adj = 1, 
       #cex.main = 0.8, font.main = 2, col.main = "black")
 ```
+
 
 Homoskedasticity 
 
@@ -219,10 +253,10 @@ dfObs <- data.frame(obs,leverage, cooksDistance, stud)
 highLeverage <- dfObs %>% filter(leverage > doubleAverage)
 outlier <- dfObs %>% filter(stud > criticalValue[2] | stud < criticalValue[1])
 influential <- dfObs %>% filter(cooksDistance > 1)
-dim(outlier);dim(highLeverage)
+dim(outlier);dim(highLeverage);dim(influential)
 ```
 
-We find no influential points but there is a signifigant amount of outliers. 
+We find no influential points but there are a signifigant amount of outliers. 
 
 ```{r}
 leverage <- highLeverage
@@ -234,6 +268,8 @@ hist(outliers$stud,22)
 oddObservations <- leverage %>% full_join(outliers, by = c("obs", "leverage", "cooksDistance", "stud")) 
 oddObservations
 ```
+
+-----------------------------------------------------------------------------------------------------------------------------------------
 
 **Investigating the outliers**
 Taking the averages and standard deviations of our outliers observations to see if they are dramtically out of line with the origional hisotgrams. 
@@ -248,21 +284,21 @@ out <- superSetOutliers %>% summarise_all(mean)
 
 
 ```{r}
-subSet <- dataSetSmall[-oddObservations$obs,] 
+subSet <- dataSet[-oddObservations$obs,] 
 hm <- subSet %>% summarise_all(mean)
-var <- summarise_all(subSet, sd)
 
 names <- c("leverage","Outliers","Rest of Data","Standard Deviation across all Data")
 df_compare <- rbind(hm,dfOdd,sd)
 df_compare <- df_compare %>% column_to_rownames(names)
 ```
 
+
 **Model Produced with only non-outlier data**
 
 Super clean, probably contains super high varience. 
 
 ```{r}
-modelSubSet <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = subSet)
+modelSubSet <- lm(rentProportion~.-Observation.Number-vacantProportion + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = subSet)
 
 summary(modelSubSet)
 vif(modelSubSet)
@@ -281,39 +317,21 @@ plot(modelSubSet)
 plot(modelSubSet$fitted.values,rstudent(modelSubSet))
 ```
 
-
-Best Subset Selection. 
-
-Looking at the plots we can see that we should probably remove those variables that attempt to find interaction between diabetes and hypertension. The average lead amoung for the region has also been removed in all the variable selective models. It will be left in for the time being for heiracrchical organziation as it would remain as an interaction term between anxiety and depression anyways. 
-
-**Can be imporved by only using the training datasets to select as this will be have high varience**
-
-```{r}
-regfull <- regsubsets(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation + percent.of.vacant.properties + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion + TotalPercentEBLL15_18:hyper2Porportion + TotalPercentEBLL15_18:Dia2Porportion,data = dataSetSmall,nvmax = 11)
-regsummary <-summary(regfull)
-
-test <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPopulation 
-           + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion,data = dataSetSmall)
-dataSetSmall
-summary(test)
-plot(regfull, scale = "r2")
-plot(regfull, scale = "adjr2")
-plot(regfull, scale = "Cp")
-plot(regfull, scale = "bic")
-```
+-----------------------------------------------------------------------------------------------------------------------------------------
 
 Checking for overfitting 
 
 ```{r}
 set.seed(343)
-shuf <- sample(1:nrow(dataSetSmall))
-dataShuf <- dataSetSmall[shuf,] 
 
-trainid <- sample(1:nrow(regSmall), nrow(regSmall)*0.8 , replace=F)
-train <- regSmall[trainid,]
-test <- regSmall[-trainid,]
+shuf <- sample(1:nrow(dataSet))
+dataShuf <- dataSet[shuf,] 
 
-modelTrain <- lm(rentTotalPop~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion + TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = train)
+trainid <- sample(1:nrow(dataShuf), nrow(dataShuf)*0.8 , replace=F)
+train <- dataShuf[trainid,]
+test <- dataShuf[-trainid,]
+
+modelTrain <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = train)
 
 summary(modelTrain)$r.squared
 
@@ -321,27 +339,29 @@ shrinkage <- (summary(fullModel)$r.squared - summary(modelTrain)$r.squared)
 shrinkage
 ```
 
-Cross Validation
+10-fold ross Validation
 
 ```{r}
 set.seed(343)
-shuf <- sample(1:nrow(dataSetSmall))
-dataShuf <- dataSetSmall[shuf,] 
+
+shuf <- sample(1:nrow(dataSet))
+dataShuf <- dataSet[shuf,] 
 
 ind1 <- seq(1,349,38)
-ind2 <- seq(38,386,38)
-ind2[10] <- 387
+ind2 <- seq(38,380,38)
+
 
 cv.MSE <- c(1:10)
 r2 <- c(1:10)
 shrink <- c(1:10)
+
 for(i in 1:10){
   
   temp.train <- -(ind1[i]:ind2[i])
   temp.test <- (ind1[i]:ind2[i])
   temp.x <- dataShuf[temp.train,]
   
-  temp.model <- lm(rentTotalPop ~ TotalPercentEBLL15_18 + anxietyPorportion + depressionPorportion + hyper2Porportion + Dia2Porportion +    TotalPercentEBLL15_18:anxietyPorportion + TotalPercentEBLL15_18:depressionPorportion, data = temp.x)
+  temp.model <- lm(rentProportion~.-Observation.Number + TotalPercentEBLL15_18:anxietyProportion + TotalPercentEBLL15_18:depressionProportion, data = temp.x)
   
   yhat <- predict(temp.model, dataShuf[temp.test,])
   cv.MSE[i] <- mean( (yhat - dataShuf[temp.test,]$rentTotalPop)^2 ) 
@@ -349,7 +369,15 @@ for(i in 1:10){
   shrink[i] <- (summary(fullModel)$r.squared - r2[i])
 }
 r2
+
 shrink
+
 mean(shrink)
+
+```
+
+```{r}
+summary(fullModel)
+dim(dataSet)
 ```
 
