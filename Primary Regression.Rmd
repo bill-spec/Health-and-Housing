@@ -18,6 +18,7 @@ library(leaps)
 library(ggthemes)
 library(alr3)
 library(moments)
+library(Hmisc)
 ```
 
 Reading in the data.
@@ -52,6 +53,20 @@ model3 <- lm(vacantProportion~ poly(TotalPercentEBLL15_18,3) + poly(depressionPr
 anova(model1,model2,model3)
 summary(model3)
 ```
+
+
+```{r}
+anxietyModel <- lm(rentProportion~anxietyProportion,dataSet)
+depressionModel <- lm(rentProportion~depressionProportion,dataSet)
+hypertensionModel <- lm(rentProportion~hyperTreatedProportion,dataSet)
+diabetesModel <- lm(rentProportion~diabetesTreatedProportion,dataSet)
+
+summary(anxietyModel)$coef[2,1]
+summary(depressionModel)$coef[2,1]
+summary(hypertensionModel)$coef[2,1]
+summary(diabetesModel)$coef[2,1]
+```
+
 
 
 Single Variable Models
@@ -193,7 +208,7 @@ plot(jitter(df$X.Observation.Number.....b),jitter(df$Studentized.Residuals), typ
      pch = 20, # Shape: circles that can filed
      xlab = "Observation Number", ylab = "Studentized Residuals", # Labels
      axes = FALSE, # Don't plot the axes
-     frame.plot = FALSE, # Remove the frame 
+     frame.plot = TRUE, # Remove the frame 
      xlim = c(0, 400), ylim = c(-3, 6), # Limits
      panel.first = abline(h = c(-2, 0,2,4,6), col = "grey80"))
 abline(h = 0, col ='red')
@@ -223,7 +238,7 @@ plot(jitter(df$X.Fitted.Values.....b),jitter(df$Studentized.Residuals),
      pch = 20, # Shape: circles that can filed
      xlab = "Fitted Values", ylab = "Studentized Residuals", # Labels
      axes = FALSE, # Don't plot the axes
-     frame.plot = FALSE, # Remove the frame 
+     frame.plot = TRUE, # Remove the frame 
      xlim = c(0, 0.8), ylim = c(-4, 6), # Limits
      panel.first = abline(h = c(-4,-2, 0,2,4,6), col = "grey80"))
 abline(h = 0, col ='red')
@@ -379,5 +394,61 @@ mean(shrink)
 ```{r}
 summary(fullModel)
 dim(dataSet)
+vif(fullModel)
+dataSet
+confint(fullModel)
+```
+
+
+Renting Hisogram
+
+```{r}
+histogram(dataSet$rentProportion, breaks = 50,
+     xlab = "Frequency", ylab = "Proportion of Renters",             # Labels
+     axes = FALSE,                                                      # Don't plot the axes# Remove the frame 
+     xlim = c(0,1), ylim = c(0,6), col = "grey80")    
+```
+
+
+
+Axiety Plot
+
+```{r}
+ggplot(data = dataSet ,mapping = aes(rentProportion, anxietyProportion)) +
+  geom_point(size = .9, position ='Jitter')+
+  geom_smooth(color = 'red', method='lm', formula= y~x, se = F)+
+  labs(y = "Anxiety Proportion", x= "Rent Proportion")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+ggplot(data = dataSet ,mapping = aes(rentProportion, anxietyProportion)) +
+  geom_point(size = .9, position = 'Jitter')+
+  geom_smooth(color = 'red', method='lm', formula= y~x+I(x^2), se = F)+
+  labs(y = "Anxiety Proportion", x= "Rent Proportion")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+?geom_point
+
+```
+
+
+```{r}
+help <- dataSet %>% mutate(
+  al = TotalPercentEBLL15_18*anxietyProportion,
+  del = TotalPercentEBLL15_18*depressionProportion,
+  hl = TotalPercentEBLL15_18*hyperTreatedProportion,
+  dl = TotalPercentEBLL15_18*diabetesTreatedProportion
+)
+help
+summary(help$al)
+summary(help$del)
+summary(help$hl)
+summary(help$dl)
+summary(help$totalPopulation)
+
+sd(help$totalPopulation)
+
 ```
 
