@@ -16,7 +16,7 @@ library(MASS)
 library(caret)
 library(leaps)
 library(ggthemes)
-library(alr3)
+#library(alr3)
 library(moments)
 library(Hmisc)
 ```
@@ -44,6 +44,14 @@ ggplot(gather(data = dataSet), aes(value)) +
 plot(dataSet[1:5])
 plot(dataSet[,c(1,6:8)])
 ```
+
+```{r}
+model1 <- lm(vacantProportion~ TotalPercentEBLL15_18,data = dataSet)
+summary(model1)
+```
+
+
+
 
 ```{r}
 model1 <- lm(vacantProportion~ TotalPercentEBLL15_18 + poly(depressionProportion,1) + poly(rentProportion,1) ,data = dataSet)
